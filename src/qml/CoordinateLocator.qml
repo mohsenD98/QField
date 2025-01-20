@@ -33,6 +33,7 @@ Item {
   property bool snapToCommonAngles: false
   property bool snappingIsRelative: false
   property real snappingAngleDegrees: 45.0
+  property real snappingTolerance: 0
 
   /**
    * Overrides any possibility for the user to modify the coordinate.
@@ -406,9 +407,9 @@ Item {
     if (!rubberbandModel) {
       return;
     }
-    const MINIMAL_PIXEL_DISTANCE_TRESHOLD = 20;
-    const SOFT_CONSTRAINT_TOLERANCE_DEGREES = 20;
-    const SOFT_CONSTRAINT_TOLERANCE_PIXEL = 40;
+    const MINIMAL_PIXEL_DISTANCE_TRESHOLD = 20 * getToleranceMultiplier();
+    const SOFT_CONSTRAINT_TOLERANCE_DEGREES = 20 * getToleranceMultiplier();
+    const SOFT_CONSTRAINT_TOLERANCE_PIXEL = 40 * getToleranceMultiplier();
     const rubberbandPointsCount = rubberbandModel.vertexCount;
     const targetPoint = mapCanvas.mapSettings.coordinateToScreen(forwardMode ? rubberbandModel.firstCoordinate : rubberbandModel.lastCoordinate);
     const minimumDigitizedPoints = forwardMode ? 3 : 2;
@@ -442,6 +443,25 @@ Item {
       if (dist < SOFT_CONSTRAINT_TOLERANCE_PIXEL) {
         return 180.0 / Math.PI * softAngle;
       }
+    }
+  }
+
+  /** Function to get the multiplier based on the selected tolerance
+  *
+  * - Narrow tolerance (index 0) divides by 2.
+  * - Normal tolerance (index 1) keeps unchanged.
+  * - Large tolerance (index 2) multiplies by 4.
+  */
+  function getToleranceMultiplier() {
+    switch (snappingTolerance) {
+    case 0:
+      return 0.5;
+    case 1:
+      return 1;
+    case 2:
+      return 4;
+    default:
+      return 1;
     }
   }
 
