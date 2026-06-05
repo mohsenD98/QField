@@ -28,6 +28,32 @@ Popup {
   readonly property int panelExtraSpace: allowCaptureModeToggle ? 70 : 0
   readonly property int captureOffset: allowCaptureModeToggle ? -25 : 0
 
+  readonly property var videoQualityPresets: [
+    {
+      label: qsTr("Low"),
+      bitrate: 500000
+    },
+    {
+      label: qsTr("Medium"),
+      bitrate: 1500000
+    },
+    {
+      label: qsTr("High"),
+      bitrate: 4000000
+    },
+    {
+      label: qsTr("Original"),
+      bitrate: 0
+    }
+  ]
+
+  enum VideoQuality {
+    Low,
+    Medium,
+    High,
+    Original
+  }
+
   function requiredPermissionsGranted() {
     if (cameraPermission.status !== Qt.PermissionStatus.Granted) {
       return false;
@@ -118,6 +144,7 @@ Popup {
     property string deviceId: ''
     property size resolution: Qt.size(0, 0)
     property int pixelFormat: 0
+    property int videoQuality: 2
   }
 
   ExpressionEvaluator {
@@ -417,6 +444,39 @@ Popup {
     }
 
     Rectangle {
+      id: qualityPreviewInfo
+      visible: cameraItem.state == "VideoCapture" && captureLoader.item && captureLoader.item.recorder.recorderState === MediaRecorder.StoppedState
+
+      x: cameraItem.isPortraitMode ? (parent.width - width) / 2 : parent.width - (100 + mainWindow.sceneBottomMargin + cameraItem.panelExtraSpace) - width - 16
+      y: cameraItem.isPortraitMode ? parent.height - (100 + cameraItem.panelExtraSpace + mainWindow.sceneRightMargin) - height - 16 : (parent.height - height) / 2
+
+      width: qualityPreviewText.implicitWidth + 24
+      height: 28
+      radius: 14
+      color: Theme.darkGraySemiOpaque
+
+      Behavior on width {
+        NumberAnimation {
+          duration: 150
+        }
+      }
+
+      Text {
+        id: qualityPreviewText
+        anchors.centerIn: parent
+        text: {
+          const preset = cameraItem.videoQualityPresets[cameraSettings.videoQuality];
+          if (preset.bitrate <= 0)
+            return qsTr("Original quality");
+          const mbPerMin = Math.round(preset.bitrate * 60 / 8e6);
+          return preset.label + " · ~" + mbPerMin + " MB/min";
+        }
+        color: "white"
+        font: Theme.tinyFont
+      }
+    }
+
+    Rectangle {
       id: captureFlash
       anchors.fill: parent
       anchors.margins: 6
@@ -502,6 +562,7 @@ Popup {
                   }
                 } else if (cameraItem.state == "VideoCapture") {
                   if (captureLoader.item.recorder.recorderState === MediaRecorder.StoppedState) {
+                    captureLoader.item.recorder.videoBitRate = cameraItem.videoQualityPresets[cameraSettings.videoQuality].bitrate;
                     captureLoader.item.recorder.record();
                   } else {
                     cameraItem.state = "VideoPreview";
@@ -682,6 +743,7 @@ Popup {
           }
 
           Rectangle {
+            id: durationRect
             visible: cameraItem.state == "VideoCapture" && captureLoader.item && captureLoader.item.recorder.recorderState !== MediaRecorder.StoppedState
 
             x: cameraItem.isPortraitMode ? captureRing.x + captureRing.width / 2 - width / 2 : captureRing.x + captureRing.width / 2 - width / 2
@@ -716,6 +778,44 @@ Popup {
               id: durationLabelMetrics
               font: durationLabel.font
             }
+          }
+
+          Text {
+            visible: durationRect.visible && cameraSettings.videoQuality !== QFieldCamera.VideoQuality.Original
+            x: durationRect.x + (durationRect.width - width) / 2
+            y: durationRect.y + durationRect.height + 4
+            text: {
+              if (!captureLoader.item)
+                return "";
+              const preset = cameraItem.videoQualityPresets[cameraSettings.videoQuality];
+              if (preset.bitrate <= 0)
+                return "";
+              const mb = preset.bitrate * captureLoader.item.recorder.duration / 8e9;
+              return "~" + mb.toFixed(1) + " MB";
+            }
+            color: "white"
+            font.pixelSize: 10
+          }
+
+          QfToolButton {
+            id: videoQualityButton
+            visible: cameraItem.state == "VideoCapture" && captureLoader.item && captureLoader.item.recorder.recorderState === MediaRecorder.StoppedState
+            width: videoQualityButtonMetrics.boundingRect(text).width + 24
+            height: 34
+            x: captureRing.x + captureRing.width / 2 - width / 2
+            y: captureRing.y - height - 20
+            text: cameraItem.videoQualityPresets[cameraSettings.videoQuality].label
+            font: Theme.tinyFont
+            iconColor: Theme.toolButtonColor
+            bgcolor: Theme.toolButtonBackgroundSemiOpaqueColor
+            onClicked: {
+              videoQualityMenu.popup(videoQualityButton.x, videoQualityButton.y);
+            }
+          }
+
+          FontMetrics {
+            id: videoQualityButtonMetrics
+            font: Theme.tinyFont
           }
         }
       }
@@ -964,6 +1064,39 @@ Popup {
               if (captureLoader.item) {
                 captureLoader.item.camera.applyCameraFormat();
               }
+            }
+          }
+        }
+      }
+    }
+
+    QfMenu {
+      id: videoQualityMenu
+
+      topMargin: mainWindow.sceneTopMargin
+      bottomMargin: mainWindow.sceneBottomMargin
+      z: 10000
+
+      Repeater {
+        model: cameraItem.videoQualityPresets
+
+        delegate: MenuItem {
+          property int qualityIndex: index
+
+          text: modelData.label + (modelData.bitrate > 0 ? " (~" + (modelData.bitrate / 1000000).toFixed(1) + " Mbps)" : "")
+          height: 48
+          leftPadding: Theme.menuItemCheckLeftPadding
+          font: Theme.defaultFont
+          checkable: true
+          checked: cameraSettings.videoQuality == qualityIndex
+          indicator.height: 20
+          indicator.width: 20
+          indicator.implicitHeight: 24
+          indicator.implicitWidth: 24
+
+          onToggled: {
+            if (checked) {
+              cameraSettings.videoQuality = qualityIndex;
             }
           }
         }
