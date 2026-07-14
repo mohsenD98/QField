@@ -10,6 +10,7 @@
         <file>BrowserPanel.qml</file>
         <file>BusyOverlay.qml</file>
         <file>CodeReader.qml</file>
+        <file>CompassDial.qml</file>
         <file>ConfirmationToolbar.qml</file>
         <file>CoordinateLocator.qml</file>
         <file>DashBoard.qml</file>
