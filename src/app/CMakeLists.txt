@@ -175,7 +175,6 @@ function(create_executable)
       qml_target
       qfield_core_qml
       qfield_core_qml_3d
-      qfield_qml_theme
       qfield_gui_qml
       qfield_gui_qml_editorwidgets
       qfield_gui_qml_geometryeditors
