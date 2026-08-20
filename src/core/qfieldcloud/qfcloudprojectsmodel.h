@@ -65,6 +65,9 @@ class QfCloudProjectsModel : public QAbstractListModel
     //! The current cloud project. (null for non-cloud projects).
     Q_PROPERTY( QfCloudProject *currentProject READ currentProject NOTIFY currentProjectChanged )
 
+    //! The first locally available cloud project holding local changes yet to be uploaded (null when there is none).
+    Q_PROPERTY( QfCloudProject *projectWithLocalChanges READ projectWithLocalChanges NOTIFY projectWithLocalChangesChanged )
+
   public:
     enum ColumnRole
     {
@@ -139,6 +142,9 @@ class QfCloudProjectsModel : public QAbstractListModel
 
     //! Returns the cloud project of the currently oepened project or NULL for non-cloud projects.
     QfCloudProject *currentProject() const;
+
+    //! Returns the first locally available cloud project holding local changes yet to be uploaded, NULL when there is none.
+    QfCloudProject *projectWithLocalChanges() const;
 
     //! Returns the geopackage flusher
     QgsGpkgFlusher *gpkgFlusher() const { return mGpkgFlusher; }
@@ -220,6 +226,7 @@ class QfCloudProjectsModel : public QAbstractListModel
     void isCreatingChanged();
     void currentProjectIdChanged();
     void currentProjectChanged();
+    void projectWithLocalChangesChanged();
     void busyProjectIdsChanged();
     void gpkgFlusherChanged();
     void warning( const QString &message );

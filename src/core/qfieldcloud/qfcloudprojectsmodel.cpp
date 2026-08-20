@@ -51,6 +51,10 @@ QfCloudProjectsModel::QfCloudProjectsModel()
       emit busyProjectIdsChanged();
     }
   } );
+
+  connect( this, &QfCloudProjectsModel::rowsInserted, this, &QfCloudProjectsModel::projectWithLocalChangesChanged );
+  connect( this, &QfCloudProjectsModel::rowsRemoved, this, &QfCloudProjectsModel::projectWithLocalChangesChanged );
+  connect( this, &QfCloudProjectsModel::modelReset, this, &QfCloudProjectsModel::projectWithLocalChangesChanged );
 }
 
 QfCloudConnection *QfCloudProjectsModel::cloudConnection() const
@@ -142,6 +146,19 @@ void QfCloudProjectsModel::setCurrentProjectId( const QString &currentProjectId 
 QfCloudProject *QfCloudProjectsModel::currentProject() const
 {
   return mCurrentProject.data();
+}
+
+QfCloudProject *QfCloudProjectsModel::projectWithLocalChanges() const
+{
+  for ( QfCloudProject *project : mProjects )
+  {
+    if ( !project->localPath().isEmpty() && project->deltasCount() > 0 )
+    {
+      return project;
+    }
+  }
+
+  return nullptr;
 }
 
 QSet<QString> QfCloudProjectsModel::busyProjectIds() const
@@ -867,7 +884,10 @@ void QfCloudProjectsModel::setupProjectConnections( QfCloudProject *project )
     const QfCloudProject *p = static_cast<QfCloudProject *>( sender() );
     const QModelIndex idx = findProjectIndex( p->id() );
     emit dataChanged( idx, idx, QVector<int>() << LocalDeltasCountRole );
+    emit projectWithLocalChangesChanged();
   } );
+
+  connect( project, &QfCloudProject::localPathChanged, this, &QfCloudProjectsModel::projectWithLocalChangesChanged );
 }
 
 void QfCloudProjectsModel::loadProjects( const QJsonArray &remoteProjects, bool skipLocalProjects )

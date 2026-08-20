@@ -564,6 +564,27 @@ Page {
             }
           }
 
+          QfButton {
+            id: uploadLocalChangesButton
+            objectName: "uploadLocalChangesButton"
+            Layout.fillWidth: true
+            Layout.topMargin: 6
+            Layout.alignment: Qt.AlignHCenter
+            visible: cloudProjectsModel.projectWithLocalChanges !== null
+            text: qsTr("Upload local changes")
+            bgcolor: QfTheme.cloudColor
+
+            onClicked: {
+              const cloudProject = cloudProjectsModel.projectWithLocalChanges;
+              if (QfCloudUtils.getProjectId(qgisProject.fileName) === cloudProject.id) {
+                mainWindow.openCloudPopup();
+              } else {
+                mainWindow.openCloudPopupOnProjectLoad = true;
+                iface.loadFile(cloudProject.localPath, cloudProject.name);
+              }
+            }
+          }
+
           Text {
             id: recentText
             Layout.fillWidth: true

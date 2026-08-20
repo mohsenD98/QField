@@ -60,6 +60,7 @@ ApplicationWindow {
   property double sceneRightMargin: SafeArea.margins.right
 
   readonly property bool hasLocalCloudChanges: cloudProjectsModel.layerObserver.deltaFileWrapper ? cloudProjectsModel.layerObserver.deltaFileWrapper.count > 0 : false
+  property bool openCloudPopupOnProjectLoad: false
 
   onSceneLoadedChanged: {
     // This requires the scene to be fully loaded not to crash due to possibility of
@@ -4984,10 +4985,14 @@ ApplicationWindow {
         } else {
           projectInfo.restoreCloudUserInformation();
         }
-        if (!qfieldCloudPopup.visible) {
+        if (openCloudPopupOnProjectLoad) {
+          openCloudPopupOnProjectLoad = false;
+          openCloudPopup();
+        } else if (!qfieldCloudPopup.visible) {
           cloudMenuTour.startOnProjectWithLocalChanges();
         }
       } else {
+        openCloudPopupOnProjectLoad = false;
         projectInfo.hasInsertRights = true;
         projectInfo.hasEditRights = true;
       }
